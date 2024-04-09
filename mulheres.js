@@ -4,6 +4,7 @@ const { v4: uuidv4 } = require('uuid');
 
 
 const app = express() //iniciando o app
+app.use(express.json())
 const porta = 3333 //criando a porta
 
 //criando lista inicial de mulheres
@@ -37,9 +38,9 @@ function mostraMulheres (request, response) {
 function criaMulher(request, response) {
     const novaMulher = {
         id: uuidv4(),
-        nome:  require.body.nome,
-        imagem: require.body.imagem,
-        minibio: require.body.minibio
+        nome:  request.body.nome,
+        imagem: request.body.imagem,
+        minibio: request.body.minibio
 
     }
     mulheres.push(novaMulher)
@@ -47,11 +48,55 @@ function criaMulher(request, response) {
     response.json(mulheres)
 }
 
+//PATCH
+function corrigeMulher(request, response) {
+    function encontraMulher(mulher) {
+        if (mulher.id === request.params.id){
+            return mulher
+        }
+
+    }
+    const mulherEncontrada = mulheres.find(encontraMulher)
+
+    if (request.body.nome) {
+       mulherEncontrada.nome = request.body.nome
+    }
+    
+    if (request.body.minibio) {
+
+        mulherEncontrada.minibio = request.body.minibio
+    }
+     
+    if (request.body.imagem) {
+
+        mulherEncontrada.imagem = request.body.imagem
+    }
+
+    response.json(mulheres)
+}
+
+// DELETE
+function deletaMulher(request, response) {
+    function todasMenosELA( mulher) {
+        if(mulher.id !== request.params.id) {
+            return mulher
+
+        }
+    }
+    const mulheresQueFicam = mulheres.filter( todasMenosELA)
+    
+    response.json(mulheresQueFicam)
+}
+
+
+app.use(router.get('/mulheres', mostraMulheres)) //configura rota GET /mulheres
+app.use(router.post('/mulheres', criaMulher)) // configura rota POST /mulheres
+app.use(router.patch('/mulheres/:id', corrigeMulher))  // configura rota patch /mulheres/:id
+app.use(router.delete('/mulheres/:id', deletaMulher)) // configura rota delete/mulheres
+
 //PORTA
 function mostraPorta () {
     console.log("Servidor criado e rodando na porta:", porta)
 }
 
-app.use(router.get('/mulheres', mostraMulheres)) //configura rota GET /mulheres
-app.use(router.post('/mulheres', criaMulher)) // configura rota POST /mulheres
 app.listen(porta, mostraPorta) // servidor ouvindo a rota
