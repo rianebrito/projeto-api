@@ -1,91 +1,85 @@
 const express = require("express") //iniciando o espress
 const router = express.Router() //configurando a primeira parte da rota
-const { v4: uuidv4 } = require('uuid');
 
+const conectaBancoDeDados = require('./bancoDeDados') //ligando ao arquivo bancoDeDados
+conectaBancoDeDados () //chama a função que conecta o banco de dados
+
+const Mulher = require(' ./mulherModel ')
 
 const app = express() //iniciando o app
 app.use(express.json())
 const porta = 3333 //criando a porta
 
-//criando lista inicial de mulheres
-const mulheres = [
-    {
-        id: '1',
-        nome:   'Simara Conceição',
-        imagem: 'https://www.google.com/imgres?imgurl=https%3A%2F%2Fforbes.com.br%2Fwp-content%2Fuploads%2F2023%2F10%2Fmulher-brasil-rio-de-janeiro-getty.jpg&tbnid=JoZ3Jfnh3Jl12M&vet=12ahUKEwi1pMa74eeEAxUOBbkGHQ5CCj0QMygAegQIARAx..i&imgrefurl=https%3A%2F%2Fforbes.com.br%2Fforbes-mulher%2F2023%2F10%2Fbrasil-e-feminino-mulheres-sao-maioria-em-todas-as-regioes-pela-primeira-vez%2F&docid=R5N4iawGilQYSM&w=1500&h=1000&q=mulher&ved=2ahUKEwi1pMa74eeEAxUOBbkGHQ5CCj0QMygAegQIARAx',
-        minibio: 'sei lá',        
-    },
-    {
-        id:'2',
-        nome: 'Iana Chan',
-        imagem: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ3UKC5zJ4ab4ltduQsB-U1tJXVTZIw1x_5Xe6MBvMHQf3fNGPVYo7w4QjT8dllWLMjLZE&usqp=CAU',
-        minibio: 'fundadora programaria',
-    },
-    {
-        id:'3',
-        nome: 'nina da hora',
-        imagem: 'https://www.fundacaotelefonicavivo.org.br/wp-content/webp-express/webp-images/uploads/2022/11/10-ninadahora1200x628desktop.png.webp?x30379',
-        minibio: 'Hacker antiracista',
-    }
-]
-
 //GET
-function mostraMulheres (request, response) {
-    response.json(mulheres)
+async function mostraMulheres (request, response) {
+    try {
+        const mulherresVindasDoBancoDeDados = await Mulher.find()
+
+        response.json(mulherresVindasDoBancoDeDados)
+    }catch (erro) {
+        console.log(erro)
+    }
 }
 
 //POST
-function criaMulher(request, response) {
-    const novaMulher = {
-        id: uuidv4(),
+async function criaMulher(request, response) {
+    const novaMulher = new Mulher({
         nome:  request.body.nome,
         imagem: request.body.imagem,
-        minibio: request.body.minibio
-
-    }
-    mulheres.push(novaMulher)
-
-    response.json(mulheres)
+        minibio: request.body.minibio,
+        citacao: request.body.citacao
+    })
+   try {
+       const mulherCriada = await novaMulher.save()
+       response.status(201).json(mulherCriada)
+   }catch (erro) {
+    console.log(erro)
+   }
 }
 
 //PATCH
-function corrigeMulher(request, response) {
-    function encontraMulher(mulher) {
-        if (mulher.id === request.params.id){
-            return mulher
-        }
-
-    }
-    const mulherEncontrada = mulheres.find(encontraMulher)
-
+async function corrigeMulher(request, response) {
+    try{
+        const mulherEncontrada = await Mulher.findById(request.params.id)
+        
     if (request.body.nome) {
-       mulherEncontrada.nome = request.body.nome
-    }
-    
-    if (request.body.minibio) {
-
-        mulherEncontrada.minibio = request.body.minibio
-    }
+        mulherEncontrada.nome = request.body.nome
+     }
      
-    if (request.body.imagem) {
+     if (request.body.minibio) {
+ 
+         mulherEncontrada.minibio = request.body.minibio
+     }
+      
+     if (request.body.imagem) {
+ 
+         mulherEncontrada.imagem = request.body.imagem
+     }
+      if (request.body.citacao) {
+        mulherEncontrada = request.body.citacao
+      }
 
-        mulherEncontrada.imagem = request.body.imagem
+      const mulherAtualizadaNoBancoDeDados = await mulherEncontrada.save()
+
+      response.json(mulherAtualizadaNoBancoDeDados)
+ 
+    } catch (erro){
+        console.log(erro)
     }
 
-    response.json(mulheres)
+
+    
 }
 
 // DELETE
-function deletaMulher(request, response) {
-    function todasMenosELA( mulher) {
-        if(mulher.id !== request.params.id) {
-            return mulher
+async function deletaMulher(request, response) {
+    try {
+        await Mulher.findByIdAndDelete(request.params.id)
+        response.json({mensagem: 'Mulher deletada com sucesso!'})
 
-        }
+    } catch (erro) {
+        console.log(erro)
     }
-    const mulheresQueFicam = mulheres.filter( todasMenosELA)
-    
-    response.json(mulheresQueFicam)
 }
 
 
